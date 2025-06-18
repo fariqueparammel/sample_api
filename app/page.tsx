@@ -11,6 +11,7 @@ interface PrayerTimes {
 }
 
 interface CityData {
+  cityId: number;
   city: string;
   date: string;
   prayerTimes: PrayerTimes;
@@ -46,7 +47,16 @@ export default function Home() {
   const fetchPrayerTimes = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/prayer-times');
+      
+      // Create base64 encoded credentials
+      const credentials = btoa('fazil:fazil@123');
+      
+      const response = await fetch('/api/prayer-times', {
+        headers: {
+          'Authorization': `Basic ${credentials}`
+        }
+      });
+      
       const result = await response.json();
       
       if (result.success) {
@@ -112,12 +122,17 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {data.data.cities.map((city) => (
               <div
-                key={city.city}
+                key={city.cityId}
                 className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
               >
-                <h2 className="text-xl font-semibold text-gray-800 mb-4 text-center">
-                  {city.city}
-                </h2>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    {city.city}
+                  </h2>
+                  <span className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                    ID: {city.cityId}
+                  </span>
+                </div>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
                     <span className="font-medium text-gray-700">Fajr</span>
@@ -163,7 +178,10 @@ export default function Home() {
             Prayer times are calculated using the Umm Al-Qura University method
           </p>
           <p className="mt-2">
-            API Endpoints: /api/prayer-times (all cities) | /api/prayer-times/[city] (specific city)
+            API Endpoints: /api/cities (cities list) | /api/prayer-times (all cities) | /api/prayer-times/[city] (specific city)
+          </p>
+          <p className="mt-1">
+            Authentication: Basic Auth (username: fazil, password: fazil@123)
           </p>
         </footer>
       </div>

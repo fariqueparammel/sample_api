@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Coordinates, CalculationMethod, PrayerTimes } from 'adhan';
-import { format } from 'date-fns';
 
 // UAE cities with their coordinates and IDs
 const UAE_CITIES = [
@@ -20,23 +18,6 @@ const UAE_CITIES = [
     { id: 14, name: 'Hatta', latitude: 24.8000, longitude: 56.1167 },
     { id: 15, name: 'Liwa Oasis', latitude: 23.1333, longitude: 53.7833 }
 ];
-
-interface PrayerTimeData {
-    cityId: number;
-    city: string;
-    date: string;
-    prayerTimes: {
-        fajr: string;
-        dhuhr: string;
-        asr: string;
-        maghrib: string;
-        isha: string;
-    };
-    coordinates: {
-        latitude: number;
-        longitude: number;
-    };
-}
 
 // Basic authentication function
 function authenticateRequest(request: NextRequest): boolean {
@@ -70,49 +51,27 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        const today = new Date();
-        const formattedDate = format(today, 'yyyy-MM-dd');
-
-        const prayerTimesData: PrayerTimeData[] = UAE_CITIES.map(city => {
-            const coordinates = new Coordinates(city.latitude, city.longitude);
-            const params = CalculationMethod.UmmAlQura();
-            const prayerTimes = new PrayerTimes(coordinates, today, params);
-
-            return {
-                cityId: city.id,
-                city: city.name,
-                date: formattedDate,
-                prayerTimes: {
-                    fajr: format(prayerTimes.fajr, 'HH:mm'),
-                    dhuhr: format(prayerTimes.dhuhr, 'HH:mm'),
-                    asr: format(prayerTimes.asr, 'HH:mm'),
-                    maghrib: format(prayerTimes.maghrib, 'HH:mm'),
-                    isha: format(prayerTimes.isha, 'HH:mm')
-                },
-                coordinates: {
-                    latitude: city.latitude,
-                    longitude: city.longitude
-                }
-            };
-        });
-
         return NextResponse.json({
             success: true,
             data: {
-                date: formattedDate,
-                totalCities: prayerTimesData.length,
-                cities: prayerTimesData
+                totalCities: UAE_CITIES.length,
+                cities: UAE_CITIES.map(city => ({
+                    id: city.id,
+                    name: city.name,
+                    coordinates: {
+                        latitude: city.latitude,
+                        longitude: city.longitude
+                    }
+                }))
             },
             meta: {
-                calculationMethod: 'Umm Al-Qura University, Makkah',
-                timezone: 'Gulf Standard Time (GST)',
                 generatedAt: new Date().toISOString()
             }
         }, {
             status: 200,
             headers: {
                 'Content-Type': 'application/json',
-                'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+                'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type, Authorization'
@@ -120,11 +79,11 @@ export async function GET(request: NextRequest) {
         });
 
     } catch (error) {
-        console.error('Error calculating prayer times:', error);
+        console.error('Error fetching cities:', error);
 
         return NextResponse.json({
             success: false,
-            error: 'Failed to calculate prayer times',
+            error: 'Failed to fetch cities',
             message: 'An error occurred while processing the request'
         }, {
             status: 500,
